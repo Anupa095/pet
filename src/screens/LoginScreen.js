@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   forgotPassword: {
-    alignSelf: 'trailing',
+    alignSelf: 'flex-end',
     marginBottom: SPACING.l,
     marginTop: -SPACING.s,
   },
