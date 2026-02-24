@@ -8,6 +8,7 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import HomeScreen from '../screens/HomeScreen';
 import AddPetScreen from '../screens/AddPetScreen';
+import PetDetailScreen from '../screens/PetDetailScreen';
 
 const Stack = createStackNavigator();
 
@@ -28,6 +29,7 @@ const AppNavigator = () => {
                 <>
                     <Stack.Screen name="Home" component={HomeScreen} />
                     <Stack.Screen name="AddPet" component={AddPetScreen} />
+                    <Stack.Screen name="PetDetail" component={PetDetailScreen} />
                 </>
             ) : (
                 <>

@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://api.pethub.com'; // Placeholder URL
+const API_BASE_URL = 'http://192.168.8.43:5000'; // Local Node.js server
+// const API_BASE_URL = 'http://10.0.2.2:5000'; // Android Emulator
+// const API_BASE_URL = 'http://localhost:5000'; // iOS Simulator / Web
 
 const api = axios.create({
     baseURL: API_BASE_URL,

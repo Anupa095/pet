@@ -1,17 +1,43 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Image, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '../utils/theme';
 import { useAuth } from '../context/AuthContext';
-
-const DUMMY_PETS = [
-    { id: '1', name: 'Buddy', breed: 'Golden Retriever', age: '2 years', image: 'https://images.unsplash.com/photo-1552053831-71594a27632d?q=80&w=1000&auto=format&fit=crop' },
-    { id: '2', name: 'Luna', breed: 'Husky', age: '1 year', image: 'https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?q=80&w=1000&auto=format&fit=crop' },
-    { id: '3', name: 'Milo', breed: 'Tabby Cat', age: '3 years', image: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=1000&auto=format&fit=crop' },
-];
+import { db } from '../services/firebaseConfig';
+import { collection, query, getDocs, orderBy } from 'firebase/firestore';
 
 const HomeScreen = ({ navigation }) => {
     const { user, logout } = useAuth();
+    const [pets, setPets] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const fetchPets = async () => {
+        try {
+            const q = query(collection(db, 'pets'));
+            const querySnapshot = await getDocs(q);
+            const petsData = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            setPets(petsData);
+        } catch (error) {
+            console.error('Error fetching pets from Firestore:', error);
+            Alert.alert('Firebase Error', error.message || 'Check your connection or security rules.');
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchPets();
+    }, []);
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        fetchPets();
+    };
 
     const handleLogout = async () => {
         try {
@@ -22,7 +48,10 @@ const HomeScreen = ({ navigation }) => {
     };
 
     const renderPetItem = ({ item }) => (
-        <TouchableOpacity style={styles.petCard}>
+        <TouchableOpacity
+            style={styles.petCard}
+            onPress={() => navigation.navigate('PetDetail', { pet: item })}
+        >
             <Image source={{ uri: item.image }} style={styles.petImage} />
             <View style={styles.petInfo}>
                 <Text style={styles.petName}>{item.name}</Text>
@@ -40,7 +69,7 @@ const HomeScreen = ({ navigation }) => {
             <View style={styles.header}>
                 <View>
                     <Text style={styles.welcomeText}>Hello, {user?.email?.split('@')[0] || 'User'}!</Text>
-                    <Text style={styles.headerTitle}>Find your best friend</Text>
+                    <Text style={styles.headerTitle}>Your Pets</Text>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <TouchableOpacity style={[styles.profileButton, { marginRight: SPACING.s }]} onPress={handleLogout}>
@@ -54,23 +83,35 @@ const HomeScreen = ({ navigation }) => {
 
             <View style={styles.searchBar}>
                 <Ionicons name="search-outline" size={20} color={COLORS.textLight} />
-                <Text style={styles.searchPlaceholder}>Search for pets...</Text>
+                <Text style={styles.searchPlaceholder}>Search your pets...</Text>
             </View>
 
             <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>My Pets</Text>
-                <TouchableOpacity>
-                    <Text style={styles.seeAllText}>See All</Text>
+                <Text style={styles.sectionTitle}>Pet Accounts</Text>
+                <TouchableOpacity onPress={onRefresh}>
+                    <Text style={styles.seeAllText}>Refresh</Text>
                 </TouchableOpacity>
             </View>
 
-            <FlatList
-                data={DUMMY_PETS}
-                renderItem={renderPetItem}
-                keyExtractor={item => item.id}
-                contentContainerStyle={styles.listContainer}
-                showsVerticalScrollIndicator={false}
-            />
+            {loading ? (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color={COLORS.primary} />
+                </View>
+            ) : (
+                <FlatList
+                    data={pets}
+                    renderItem={renderPetItem}
+                    keyExtractor={item => item.id.toString()}
+                    contentContainerStyle={styles.listContainer}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                    }
+                    ListEmptyComponent={
+                        <Text style={{ textAlign: 'center', marginTop: 50, color: COLORS.textLight }}>No pets found. Add one!</Text>
+                    }
+                />
+            )}
 
             <TouchableOpacity
                 style={styles.fab}
